@@ -1,22 +1,23 @@
 module systolic_array_tb;
 
     // Paraméterek
-    parameter L = 4;
-
+   
     // Jelváltozók
     reg clk;
     reg reset;
     reg en;
-    reg [15:0] a [0:L-1];
-    reg [15:0] b [0:L-1];
-    wire [15:0] P [0:L-1];
+    reg [5:0] matrix_N;
+    reg [15:0] a [0:32-1];
+    reg [15:0] b [0:32-1];
+    wire [15:0] P [0:32-1];
     wire ready;
 
     // Modul instanciálása
-    systolic_array #(L) uut (
+    systolic_array uut (
         .clk(clk),
         .reset(reset),
         .en(en),
+        .matrix_N(matrix_N),
         .a(a),
         .b(b),
         .P(P),
@@ -36,6 +37,7 @@ module systolic_array_tb;
         en = 1;
         #10
         reset = 0;
+        matrix_N=4;
         // Bemeneti adatok inicializálása
         a[0]=16'h3C00;
         a[1]=16'h0000;

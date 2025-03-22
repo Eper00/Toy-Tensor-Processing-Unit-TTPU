@@ -13,7 +13,7 @@ genvar i;
 generate
   
         for (i = 0; i < LENGTH; i = i + 1) begin: gen_blk  
-           Floating_point_Unit #(DATA_WIDTH) dut (
+           floating_point_unit #(DATA_WIDTH) dut (
             .clk(clk),
             .reset(reset),
             .en(en),

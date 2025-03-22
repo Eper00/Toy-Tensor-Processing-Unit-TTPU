@@ -4,14 +4,18 @@ module random_access_memory (
     input  wire        read_block,
     input  wire        read_file,
     input  wire        read_matrix,
+    input  wire        read_vector,
     input  wire [5:0]  matrix_M,
     input  wire [5:0]  matrix_N,
+    input  wire [5:0]  vector_L,
     input  wire [19:0] file_size,
     input  wire [19:0] address_block,
     input  wire [19:0] address_matrix,
+    input  wire [19:0] address_vector,
     input  wire [15:0] data_in,
     output reg  [15:0] data_out,
-    output reg  [15:0] matrix_out [0:31][0:31] // 32 helyett 31, hogy indexelés helyes legyen
+    output reg  [15:0] matrix_out [0:31][0:31],
+    output reg  [15:0] vector_out [0:31] 
 );
 
 integer fd;
@@ -64,6 +68,27 @@ always @(posedge clk) begin
     if (read_block) begin
         data_out <= ram_block[address_block];
     end
+    if (read_vector)begin
+        for (integer i=0 ;i<32;i=i+1)begin
+            if(i<vector_L)
+                vector_out[i]<=ram_block[address_vector+i];
+             else
+                vector_out[i]<=0;
+        
+        end
+    
+    end
+    if (read_vector)begin
+        for (integer i=0 ;i<32;i=i+1)begin
+            if(i<vector_L)
+                vector_out[i]<=ram_block[address_vector+i];
+             else
+                vector_out[i]<=0;
+        
+        end
+    
+    end
+    
 end
 
 endmodule
