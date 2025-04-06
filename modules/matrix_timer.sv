@@ -6,7 +6,7 @@ module matrix_timer(
 );
 
     reg [7:0] step; // Lépésszámláló
-    byte i, j;
+    integer i; // ciklusváltozó
 
     always @(posedge clk) begin
         if (en) begin
@@ -18,17 +18,16 @@ module matrix_timer(
             // Ha még nem léptük túl a 62-t, töltsük fel az aktuális átlót
             if (step < 63) begin
                 for (i = 0; i <= step; i = i + 1) begin
-                    j <= step - i;
-                    if (i < 32 && j < 32) begin
-                        vector_out[i] <= matrix_in[i][j];
+                    integer j_local;
+                    j_local = step - i;
+                    if (i < 32 && j_local < 32) begin
+                        vector_out[i] <= matrix_in[i][j_local];
                     end
                 end
                 step <= step + 1; // Következő lépés
             end
         end else begin
-            step <= 0; // Reseteljük a számlálót, ha az `en` nincs aktív állapotban
-            i<= 0; 
-            j<= 0;
+            step <= 0; // Reset
         end
     end
 
