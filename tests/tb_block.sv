@@ -42,7 +42,7 @@ module tb_processing_unit();
         a = 16'h4400;  
         b = 16'h4600;  
         en = 1;
-        #80;
+        #120
 
        
         a = 16'h4000;  // 1 (mantissa = 1, exponent = 0)

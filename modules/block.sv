@@ -1,75 +1,140 @@
 module processing_unit (
-    input wire clk,                  // Órajel
-    input wire reset,                // Reset jel
-    input wire start,                   // Engedélyezés jel
-    input wire [15:0] a,             // Első bemeneti szám
-    input wire [15:0] b,             // Második bemeneti szám
-    output reg [15:0] P,             // Kimeneti összeg
-    output reg ready                 // Jelzi, hogy a P kimenet érvényes
+    input wire clk,
+    input wire reset,
+    input wire start,
+    input wire [15:0] a,
+    input wire [15:0] b,
+    output reg [15:0] P,
+    output reg ready
 );
 
-    reg [15:0] result_temp;          // Ideiglenes tároló a szorzás eredményének
-    reg [15:0] result_sum;           // Az összeg, amit a Floating_point_Unit végez el (P_temp + P)
+    reg [3:0] state;
 
-    // Két ciklusos szorzás
-    wire [15:0] mult_result;
+localparam IDLE      = 4'd0;
+localparam MULT_1    = 4'd1;
+localparam MULT_2    = 4'd2;
+localparam MULT_3    = 4'd3;
+localparam SAVE_MULT = 4'd4;
+localparam ADD_1     = 4'd5;
+localparam ADD_2     = 4'd6;
+localparam ADD_3     = 4'd7;
+localparam ADD_4     = 4'd8;
+localparam ADD_5     = 4'd9;
+localparam ADD_6     = 4'd10;  // ÚJ állapot
+localparam DONE      = 4'd11;
+
+
+
+    reg [15:0] mult_result;
+    reg [15:0] add_result;
+
+    wire [15:0] mult_out;
+    wire [15:0] add_out;
+
     reg en1, en2;
+
     floating_point_multiplayer multiplier (
         .clk(clk),
         .reset(reset),
         .en(en1),
         .a(a),
         .b(b),
-        .result(mult_result)
+        .result(mult_out)
     );
 
-    // Négy ciklusos összegzés
-    wire [15:0] sum_result;
     floating_point_adder adder (
         .clk(clk),
         .reset(reset),
         .en(en2),
-        .a(result_temp),   // A szorzás eredménye
-        .b(P),              // A korábbi kimenet
-        .result(sum_result)
+        .a(mult_result),
+        .b(P),
+        .result(add_out)
     );
 
-    // 2 ciklusos szorzás (mult_result késleltetése)
-    reg [2:0] mult_valid_shift;  // 3 bites shift regiszter a szorzás valid jeleinek tárolására
     always @(posedge clk or posedge reset) begin
         if (reset) begin
-            result_temp <= 0;
-            en1 <= 0;
-            mult_valid_shift <= 3'b000; // 3 bitre növelve
-        end else if (start) begin
-            en1 <= 1;
-            mult_valid_shift <= mult_valid_shift + 1;  // Shifteljük a valid jelet
-            if (mult_valid_shift == 3'b010) begin  // 2. bit - ekkor érkezik meg a szorzás eredménye
-                result_temp <= mult_result; // A szorzás eredménye
-            end
-        end
-    end
-
-    // 4 ciklusos késleltetés az adderhez
-    reg [4:0] add_valid_shift;   // 5 bites shift regiszter a késleltetéshez
-    always @(posedge clk or posedge reset) begin
-        if (reset) begin
-            result_sum <= 0;
-            en2 <= 0;
-            P <= 0;
+            state <= IDLE;
+            P <= 16'd0;
+            mult_result <= 16'd0;
+            add_result <= 16'd0;
             ready <= 0;
-            add_valid_shift <= 5'b00000;  // Shift regiszter 5 bitre növelve
-        end else if (mult_valid_shift > 3'b010) begin 
-            en2 <= 1; // Multiplier vége után jöhet az adder
-            add_valid_shift <= add_valid_shift + 1;  // Shifteljük a valid jelet
-            if (add_valid_shift == 5'b10000) begin  // Ha elértük a 4. bitet, akkor a kimenet készen van
-                result_sum <= sum_result;
-                P <= sum_result;
-                ready <= 1;  // Kimenet érvényes
-            end else begin
-                ready <= 0;
-            end
+            en1 <= 0;
+            en2 <= 0;
+        end else begin
+            // Alapértelmezetten letiltjuk az engedélyezőket
+            en1 <= 0;
+            en2 <= 0;
+            ready <= 0;
+
+            case (state)
+                IDLE: begin
+                    if (start) begin
+                        en1 <= 1;
+                        state <= MULT_1;
+                    end
+                end
+
+                MULT_1: begin
+                    en1 <= 1;
+                    state <= MULT_2;
+                end
+
+                MULT_2: begin
+                    en1 <= 1;
+                    state <= MULT_3;
+                end
+
+               MULT_3: begin
+                    en1 <= 0;
+                    state <= SAVE_MULT;
+                end
+                
+                SAVE_MULT: begin
+                    mult_result <= mult_out;
+                    en2 <= 1;
+                    state <= ADD_1;
+                end
+                
+                ADD_1: begin
+                    en2 <= 1;
+                    state <= ADD_2;
+                end
+                
+                ADD_2: begin
+                    en2 <= 1;
+                    state <= ADD_3;
+                end
+                
+                ADD_3: begin
+                    en2 <= 1;
+                    state <= ADD_4;
+                end
+                
+                ADD_4: begin
+                    en2 <= 1;
+                    state <= ADD_5;
+                end
+                
+                ADD_5: begin
+                    en2 <= 1;
+                    state <= ADD_6;
+                end
+                
+                ADD_6: begin
+
+                    state <= DONE;
+                end
+                
+                DONE: begin
+                    if (!start)
+                       add_result <= add_out;
+                       P<= add_out;
+                       ready <= 1;
+                       state <= IDLE;
+                end
+                
+                
+                endcase 
         end
     end
-
 endmodule

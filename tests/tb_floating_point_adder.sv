@@ -46,9 +46,9 @@ module tb_floating_point_adder;
         // Kivonás tesztelése negatív számokkal
         #10 en = 1;
       
-        a = 16'h4e00;  // 3
-        b = 16'h0000;  // -6
-        #30;
+        a = 16'h3C00;  // 3
+        b = 16'hC600;  // -6
+        #100;
 
 
         // Teszt befejezése
