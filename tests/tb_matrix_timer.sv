@@ -4,8 +4,8 @@ module tb_matrix_timer;
 
     reg clk;
     reg en;
-    reg [15:0] matrix_in [0:31][0:31];
-    wire [15:0] vector_out [0:31];
+    reg [15:0] matrix_in [0:15][0:15];
+    wire [15:0] vector_out [0:15];
 
     // Példányosítjuk a tesztelt modult
     matrix_timer uut (
@@ -26,8 +26,8 @@ module tb_matrix_timer;
         en = 0;
 
         // Inicializáljuk a bemeneti mátrixot például egy egyszerű számlálós értékekkel
-        for (i = 0; i < 32; i = i + 1) begin
-            for (j = 0; j < 32; j = j + 1) begin
+        for (i = 0; i < 16; i = i + 1) begin
+            for (j = 0; j < 16; j = j + 1) begin
                 matrix_in[i][j] = i * 32 + j + 1; // Pl.: 1, 2, 3, ... 1024
             end
         end
@@ -36,14 +36,14 @@ module tb_matrix_timer;
         #20 en = 1;
 
         // Figyeljük a működést 1000 ns-ig
-        #(63*10) $finish;
+        #(16*10) $finish;
     end
 
     // Figyeljük a kimenetet
     always @(posedge clk) begin
         if (en) begin
             $display("Timestep %0t: Vector Out: ", $time);
-            for (i = 0; i < 32; i = i + 1) begin
+            for (i = 0; i < 16; i = i + 1) begin
                 $write("%d ", vector_out[i]);
             end
             $write("\n");

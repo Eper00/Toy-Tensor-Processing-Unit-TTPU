@@ -46,8 +46,8 @@ module tb_floating_point_multiplayer;
        
         #10 en = 1;
        
-        a = 16'h4200;  // 3
-        b = 16'hC600;  // -6
+        a = 16'habcd;  // 3
+        b = 16'h4CA2;  // -6
         #10;
 
 

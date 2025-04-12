@@ -7,9 +7,9 @@ module tb_systolic_array;
     reg reset;
     reg en;
     reg [5:0] matrix_N;
-    reg [15:0] a [0:32-1];
-    reg [15:0] b [0:32-1];
-    wire [15:0] P [0:32-1];
+    reg [15:0] a [0:16-1];
+    reg [15:0] b [0:16-1];
+    wire [15:0] P [0:16-1];
     wire ready;
 
     // Modul instanciálása

@@ -1,26 +1,26 @@
 module matrix_timer(
     input wire clk,
     input wire en,
-    input wire [15:0] matrix_in [0:31][0:31],
-    output reg [15:0] vector_out [0:31]
+    input wire [15:0] matrix_in [0:15][0:15],
+    output reg [15:0] vector_out [0:15]
 );
 
     reg [7:0] step; // Lépésszámláló
-    integer i; // ciklusváltozó
+    int i; // ciklusváltozó
 
     always @(posedge clk) begin
         if (en) begin
             // Nullázzuk a vektort minden ciklusban
-            for (i = 0; i < 32; i = i + 1) begin
+            for (i = 0; i < 16; i = i + 1) begin
                 vector_out[i] <= 16'd0;
             end
 
             // Ha még nem léptük túl a 62-t, töltsük fel az aktuális átlót
-            if (step < 63) begin
+            if (step < 16*2-1) begin
                 for (i = 0; i <= step; i = i + 1) begin
                     integer j_local;
-                    j_local = step - i;
-                    if (i < 32 && j_local < 32) begin
+                    j_local = step - {2'b00, i}; 
+                    if (i < 16 && j_local < 16) begin
                         vector_out[i] <= matrix_in[i][j_local];
                     end
                 end
