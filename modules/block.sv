@@ -20,8 +20,9 @@ localparam ADD_2     = 4'd6;
 localparam ADD_3     = 4'd7;
 localparam ADD_4     = 4'd8;
 localparam ADD_5     = 4'd9;
-localparam ADD_6     = 4'd10;  // ÚJ állapot
-localparam DONE      = 4'd11;
+localparam ADD_6     = 4'd10;
+localparam ADD_7     = 4'd11;   // ÚJ állapot
+localparam DONE      = 4'd12;
 
 
 
@@ -121,11 +122,16 @@ localparam DONE      = 4'd11;
                 end
                 
                 ADD_6: begin
-
+                    en2 <= 1;
+                    state <= ADD_7;
+                end
+                ADD_7: begin
+                    en2 <= 1;
                     state <= DONE;
                 end
                 
                 DONE: begin
+                en2 <= 0;
                     if (!start)
                        add_result <= add_out;
                        P<= add_out;
