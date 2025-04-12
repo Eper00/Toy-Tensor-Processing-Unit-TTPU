@@ -4,7 +4,7 @@
    use(m5-1.0)
 \SV
    m5_makerchip_module
-\TLV ($_result_sum, $_in1 ,$_in2)
+\TLV mau($_result_sum, $_in1 ,$_in2)
    |mau
       ?$valid
          @0
