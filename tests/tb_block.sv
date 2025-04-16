@@ -1,13 +1,22 @@
 module tb_processing_unit();
 
-    reg clk;                  // Órajel
-    reg reset;                // Reset jel
-    reg en;                   // Engedélyezés jel
-    reg [15:0] a, b;          // Két bemeneti szám
-    wire [15:0] P;            // Kimeneti összeg
-    wire ready;               // Kimeneti kész jelzés
+    reg clk;
+    reg reset;
+    reg en;
+    reg [15:0] a, b;
+    wire [15:0] P;
+    wire ready;
 
-    // Processing unit instanciálása
+    // Regisztertömbök
+    reg [15:0] a_array [0:3];
+    reg [15:0] b_array [0:3];
+    integer i;
+
+    // Ready számláló
+    integer ready_count = 0;
+    integer ready_limit = 3;  // Itt állítható, hány ciklus után álljon meg
+
+    // Unit instanciálása
     processing_unit uut (
         .clk(clk),
         .reset(reset),
@@ -20,34 +29,52 @@ module tb_processing_unit();
 
     // Órajel generálás
     always begin
-        #5 clk = ~clk;  // 10 időegység alatt válik 0-ról 1-re
+        #5 clk = ~clk;
     end
 
-    // Tesztelés
     initial begin
-        // Kezdeti állapotok
         clk = 0;
         reset = 0;
         en = 0;
-       
 
-       
-        reset = 1;
-        #10;
-        reset = 0;
-        #10;
+        // Adatok betöltése a tömbökbe
+        a_array[0] = 16'h4200;
+        b_array[0] = 16'hB400;
 
-      
-      
-        a = 16'h4400;  
-        b = 16'h4600;  
+        a_array[1] = 16'h3400;
+        b_array[1] = 16'h4400;
+
+        a_array[2] = 16'h4500;
+        b_array[2] = 16'h3000;
+
+        a_array[3] = 16'h3800;
+        b_array[3] = 16'h3C00;
+
+        // Reset szekvencia
+        #2 reset = 1;
+        #10 reset = 0;
+
+        // Engedélyezés
         en = 1;
-        #130
+        i = 0;
 
-       
-        a = 16'h4000;  // 1 (mantissa = 1, exponent = 0)
-        b = 16'hC400;  // 2 (mantissa = 1, exponent = 1)
-        #60;
+        fork
+            begin
+                while (ready_count < ready_limit) begin
+                    @(posedge clk);
+                    if (ready) begin
+                        a <= a_array[i];
+                        b <= b_array[i];
+                        i = i + 1;
+                        ready_count = ready_count + 1;
+                    end
+                end
+                // Ha elérte a limite, akkor tartjuk az utolsó értékeket
+                @(posedge clk);
+                en <= 0;  // kikapcsoljuk a start jelet
+                $display("Ready pulse count elérte a %0d-et. A bemenetek tartva.", ready_limit);
+            end
+        join
     end
 
 endmodule

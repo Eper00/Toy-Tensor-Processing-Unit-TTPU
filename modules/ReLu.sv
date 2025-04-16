@@ -1,6 +1,6 @@
 module ReLu #(
     parameter DATA_WIDTH = 16,
-    parameter LENGTH = 16
+    parameter LENGTH = 64
 )(
     input wire clk,                   // Órajel
     input wire reset,                 // Reset jel
