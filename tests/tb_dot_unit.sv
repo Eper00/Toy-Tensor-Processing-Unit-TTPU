@@ -86,11 +86,7 @@ module tb_dot_unit;
             end
 
             // eredmény figyelése
-            begin
-                wait(done);
-                $display("KÉSZ: Eredmény = %h", result);
-                $finish;
-            end
+          
         join
     end
 
