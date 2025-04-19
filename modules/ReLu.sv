@@ -5,8 +5,8 @@ module ReLu #(
     input wire clk,                   // Órajel
     input wire reset,                 // Reset jel
     input wire en,                    // Engedélyezés jel
-    input wire [DATA_WIDTH-1:0] In [0:LENGTH-1],  // Tömbként kell deklarálni
-    output reg [DATA_WIDTH-1:0] Out [0:LENGTH-1]  
+    input wire [LENGTH-1:0][DATA_WIDTH-1:0] In,  
+    output logic [LENGTH-1:0][DATA_WIDTH-1:0] Out  
 );
 
 always @(posedge clk or posedge reset) begin  // Mindig a clk vagy a reset pozitív élére reagáljon

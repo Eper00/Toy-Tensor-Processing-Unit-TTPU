@@ -6,12 +6,11 @@ module vector_adder #(
     input  logic reset,
     input  logic start,
     input  logic [NUM_UNITS-1:0] active_units,
-    input  logic [DATA_WIDTH-1:0] In_x [0:NUM_UNITS-1],
-    input  logic [DATA_WIDTH-1:0] In_bias [0:NUM_UNITS-1],
-    output logic [DATA_WIDTH-1:0] Out [0:NUM_UNITS-1],
+    input  logic [NUM_UNITS-1:0][DATA_WIDTH-1:0] In_x,
+    input  logic [NUM_UNITS-1:0][DATA_WIDTH-1:0] In_bias,
+    output logic [NUM_UNITS-1:0][DATA_WIDTH-1:0] Out,
     output logic ready
 );
-
     // Állapotok
     typedef enum logic [2:0] {
         IDLE,

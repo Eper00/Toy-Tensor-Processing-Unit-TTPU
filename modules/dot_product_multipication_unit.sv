@@ -1,0 +1,114 @@
+module dot_product_multiplication_unit #(
+    parameter WIDTH = 16,
+    parameter NUM_UNITS = 16
+)(
+    input  logic clk,
+    input  logic reset,
+    input  logic start,
+    input  logic [NUM_UNITS-1:0] active_units,
+    input  logic [$clog2(NUM_UNITS):0] length,
+
+    input  logic [NUM_UNITS-1:0][WIDTH-1:0] a_in_array,
+    input  logic [NUM_UNITS-1:0][WIDTH-1:0] b_in_array,
+    input  logic [NUM_UNITS-1:0][WIDTH-1:0] bias_array,
+
+    output logic [NUM_UNITS-1:0][WIDTH-1:0] relu_out,
+    output logic done,
+    output logic array_done
+);
+
+    // Interconnect
+    logic [NUM_UNITS-1:0][WIDTH-1:0] systolic_out;
+    logic [NUM_UNITS-1:0] systolic_ready;
+
+    logic [NUM_UNITS-1:0][WIDTH-1:0] adder_out;
+    logic adder_ready;
+
+    logic vector_start;
+    logic systolic_start;
+
+    // Számláló és élérzékelés
+    logic [$clog2(NUM_UNITS+1)-1:0] array_done_count;
+    logic prev_array_done;
+    logic first_start_sent;
+
+    // 1. Systolic array
+    systolic_array #(
+        .WIDTH(WIDTH),
+        .NUM_UNITS(NUM_UNITS)
+    ) sa (
+        .clk(clk),
+        .reset(reset),
+        .start(systolic_start),
+        .active_units(active_units),
+        .a_in_array(a_in_array),
+        .b_in_array(b_in_array),
+        .result_array(systolic_out),
+        .ready_array(systolic_ready)
+    );
+
+    // 2. Vector adder
+    vector_adder #(
+        .DATA_WIDTH(WIDTH),
+        .NUM_UNITS(NUM_UNITS)
+    ) adder (
+        .clk(clk),
+        .reset(reset),
+        .start(vector_start),
+        .active_units(active_units),
+        .In_x(systolic_out),
+        .In_bias(bias_array),
+        .Out(adder_out),
+        .ready(adder_ready)
+    );
+
+    // 3. ReLU
+    ReLu #(
+        .DATA_WIDTH(WIDTH),
+        .LENGTH(NUM_UNITS)
+    ) relu (
+        .clk(clk),
+        .reset(reset),
+        .en(adder_ready),
+        .In(adder_out),
+        .Out(relu_out)
+    );
+
+    assign array_done = systolic_ready[0];
+    assign done = adder_ready;
+
+    // Számlálás és vezérlés
+    always_ff @(posedge clk or posedge reset) begin
+        if (reset) begin
+            array_done_count <= 0;
+            prev_array_done <= 0;
+            vector_start <= 0;
+            first_start_sent <= 0;
+        end else begin
+            prev_array_done <= array_done;
+
+            // Első start küldése kívülről
+            if (start && !first_start_sent) begin
+                first_start_sent <= 1;
+            end
+
+            // Ha array_done felfutó él és még nem értük el a length-et
+            if (array_done && !prev_array_done && array_done_count < length) begin
+                array_done_count <= array_done_count + 1;
+            end
+
+            // Vector adder csak akkor induljon, ha elértük a kívánt számot
+            if ((array_done_count == length) && (array_done && !prev_array_done)) begin
+                vector_start <= 1;
+            end else begin
+                vector_start <= 0;
+            end
+        end
+    end
+
+    // Belső start generálás systolic array-nek
+    assign systolic_start = (first_start_sent && (array_done_count < length)) ? 
+                            (array_done && !prev_array_done ? 1 : 0) :
+                            (start && !first_start_sent); // az első ciklusnál a külső start
+
+endmodule
