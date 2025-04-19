@@ -1,6 +1,6 @@
 module vector_adder #(
     parameter DATA_WIDTH = 16,
-    parameter NUM_UNITS = 16
+    parameter NUM_UNITS = 4
 )(
     input  logic clk,
     input  logic reset,
@@ -21,22 +21,21 @@ module vector_adder #(
     } state_t;
 
     state_t state, next_state;
-
+    
     logic [DATA_WIDTH-1:0] result [0:NUM_UNITS-1];
     logic [NUM_UNITS-1:0] adder_ready;
     logic [DATA_WIDTH-1:0] adder_result [0:NUM_UNITS-1];
-    logic [NUM_UNITS-1:0] adder_reset;
-
+    reg en1;
     // Adderek példányosítása
     genvar i;
     generate
         for (i = 0; i < NUM_UNITS; i++) begin : adders
             floating_point_adder adder (
                 .clk(clk),
-                .reset(adder_reset[i]&en || reset),
-                .en(active_units[i]),
-                .a(active_units[i] ? In_x[i] : '0),
-                .b(active_units[i] ? In_bias[i] : '0),
+                .reset( ~en1 || reset),
+                .en(active_units[i] && en1),
+                .a(In_x[i]),
+                .b(In_bias[i]),
                 .result(adder_result[i]),
                 .ready(adder_ready[i])
             );
@@ -48,10 +47,9 @@ module vector_adder #(
         if (reset) begin
             state <= IDLE;
             ready <= 0;
-            en<=0;
+            
             for (int i = 0; i < NUM_UNITS; i++) begin
                 Out[i] <= 0;
-                result[i] <= 0;
             end
         end else begin
             state <= next_state;
@@ -71,52 +69,60 @@ module vector_adder #(
             end
         end
     end
-reg en;
+
     // Következő állapot logika
     always_comb begin
         next_state = state;
-        for (int i = 0; i < NUM_UNITS; i++) begin
-            adder_reset[i] = 0;
-        end
+       
 
         case (state)
             IDLE: begin
+            en1=0;
+             for (int i = 0; i < NUM_UNITS; i++) begin
+                result[i] = 0;
+            end
                 if (start) begin
                     next_state = START_ADD;
                 end
             end
 
             START_ADD: begin
-                en<=1;
+                en1=1;
                 next_state = WAIT_READY;
             end
 
             WAIT_READY: begin
-            en<=1;
+            en1=1;
                 if (&(adder_ready | ~active_units)) begin
                     // minden aktív adder készen van
                     for (int i = 0; i < NUM_UNITS; i++) begin
                         if (active_units[i]) begin
                             result[i] = adder_result[i];
                         end
-                        adder_reset[i] = 1;  // reseteljük az addereket
                     end
                     next_state = HOLD;
                 end
+                
             end
 
             HOLD: begin
-            en<=1;
+            en1=1;
                 // tartjuk az értékeket, egy ciklusig
                 next_state = DONE;
             end
 
             DONE: begin
-            en<=0;
+            en1=0;
                 if (!start) begin
                     next_state = IDLE;
                 end
             end
+            default: begin
+            // Hiba esetére, default viselkedés: menjünk vissza IDLE állapotba
+            next_state = IDLE;
+            en1 = 0;
+            
+        end
         endcase
     end
 

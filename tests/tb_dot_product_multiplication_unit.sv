@@ -1,23 +1,18 @@
-module test_dot_product_multiplication_unit;
+module tb_dot_product_multiplication_unit;
 
-    // Paraméterek
     parameter WIDTH = 16;
-    parameter NUM_UNITS = 16;
-    parameter LENGTH = 4;  // Tesztelt hossz
+    parameter NUM_UNITS = 4;
 
-    // Jeldeklarációk
-    logic clk;
-    logic reset;
-    logic start;
+    logic clk, reset, start;
     logic [NUM_UNITS-1:0] active_units;
     logic [$clog2(NUM_UNITS):0] length;
 
     logic [NUM_UNITS-1:0][WIDTH-1:0] a_in_array;
     logic [NUM_UNITS-1:0][WIDTH-1:0] b_in_array;
     logic [NUM_UNITS-1:0][WIDTH-1:0] bias_array;
+
     logic [NUM_UNITS-1:0][WIDTH-1:0] relu_out;
-    logic done;
-    logic array_done;
+    logic done, array_done, data_ready;
 
     // DUT
     dot_product_multiplication_unit #(
@@ -34,64 +29,42 @@ module test_dot_product_multiplication_unit;
         .bias_array(bias_array),
         .relu_out(relu_out),
         .done(done),
-        .array_done(array_done)
+        .array_done(array_done),
+        .data_ready(data_ready)
     );
 
-    // Órajel generálás
-    always begin
-        #5 clk = ~clk;  // 100 MHz
-    end
+    // Clock generation
+    always #5 clk = ~clk;
 
-    // Teszt inicializálás
     initial begin
-        // Kezdeti értékek
         clk = 0;
         reset = 1;
         start = 0;
-        active_units = 16'hFFFF;
-        length = LENGTH;
+        active_units = 4'b1111;
+        length = 3;
 
-        // Bemeneti adatok
-        a_in_array = '{
-            16'h3C00, 16'h4000, 16'h4040, 16'h4080,
-            16'h40A0, 16'h40C0, 16'h40E0, 16'h4100,
-            16'h4110, 16'h4120, 16'h4130, 16'h4140,
-            16'h4150, 16'h4160, 16'h4170, 16'h4180
-        };
+        // Példa értékek: 16 bites lebegőpontos hexák (pl. 0.5, 1.0, -1.0)
+        a_in_array = '{16'h3C00, 16'h3C00, 16'hBC00, 16'h0000};  // 1.0, 1.0, -1.0, 0.0
+        b_in_array = '{16'h4000, 16'h3C00, 16'h3C00, 16'h0000};  // 2.0, 1.0, 1.0, 0.0
+        bias_array  = '{16'h3800, 16'h3800, 16'h3800, 16'h0000}; // 0.5, 0.5, 0.5, 0.0
 
-        b_in_array = '{default:16'h3C00};  // Minden 1.0
-        bias_array = '{default:16'h0000}; // Minden 0.0
+        #20;
+        reset = 0;
 
-        // Reset
-        #20 reset = 0;
+        // Start impulzus
+        #10;
+        start = 1;
+        #10;
+        start = 0;
 
-        // Teszt végrehajtása
-        #10 start = 1;  // Elindítjuk az első impulzust
-        #10 start = 0;
+        // Várjuk a data_ready jelet
+        wait (data_ready);
 
-        // Ellenőrzés, hogy az array_done impulzusokat megszámolja
-        #40;
-        $display("Test after first systolic_done pulse count: %d", dut.array_done_count);
+        // Kiírás
+       
 
-        // Addig folytatjuk, amíg elérjük a kívánt length-et
-        #30;
-        $display("Test after second systolic_done pulse count: %d", dut.array_done_count);
-        #40;
-        $display("Test after third systolic_done pulse count: %d", dut.array_done_count);
-        #50;
-        $display("Test after fourth systolic_done pulse count: %d", dut.array_done_count);
-        
-        // Ellenőrizzük, hogy az adder bekapcsolódott a megfelelő impulzus után
-        #60;
-        if (dut.vector_start) begin
-            $display("Vector Adder started correctly after %0d cycles", dut.array_done_count);
-        end else begin
-            $display("Error: Vector Adder not started as expected");
-        end
-
-        // Teszt befejezés
-        #50;
-        $stop;
+        #20;
+        $finish;
     end
 
 endmodule

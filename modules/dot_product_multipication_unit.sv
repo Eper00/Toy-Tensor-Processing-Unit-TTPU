@@ -14,23 +14,33 @@ module dot_product_multiplication_unit #(
 
     output logic [NUM_UNITS-1:0][WIDTH-1:0] relu_out,
     output logic done,
-    output logic array_done
+    output logic array_done,
+    output logic data_ready
 );
+
+    typedef enum logic [2:0] {
+        IDLE,
+        SYSTOLIC_RUN,
+        WAIT_SYSTOLIC_DONE,
+        START_ADDER,
+        WAIT_ADDER_DONE,
+        DONE
+    } state_t;
+
+    state_t state, next_state;
 
     // Interconnect
     logic [NUM_UNITS-1:0][WIDTH-1:0] systolic_out;
     logic [NUM_UNITS-1:0] systolic_ready;
+    logic [NUM_UNITS-1:0] systolic_ready_prev;
 
     logic [NUM_UNITS-1:0][WIDTH-1:0] adder_out;
     logic adder_ready;
 
     logic vector_start;
-    logic systolic_start;
+    logic systolic_start_pulse;
 
-    // Számláló és élérzékelés
     logic [$clog2(NUM_UNITS+1)-1:0] array_done_count;
-    logic prev_array_done;
-    logic first_start_sent;
 
     // 1. Systolic array
     systolic_array #(
@@ -39,7 +49,7 @@ module dot_product_multiplication_unit #(
     ) sa (
         .clk(clk),
         .reset(reset),
-        .start(systolic_start),
+        .start(systolic_start_pulse),
         .active_units(active_units),
         .a_in_array(a_in_array),
         .b_in_array(b_in_array),
@@ -74,41 +84,86 @@ module dot_product_multiplication_unit #(
         .Out(relu_out)
     );
 
-    assign array_done = systolic_ready[0];
-    assign done = adder_ready;
+    assign done = vector_start;
+    assign data_ready = (state == DONE);
 
-    // Számlálás és vezérlés
+    // Egy ciklusos impulzus a systolic array újraindítására
+    assign systolic_start_pulse = (state == SYSTOLIC_RUN);
+
+    // Systolic_ready élérzékelés
     always_ff @(posedge clk or posedge reset) begin
-        if (reset) begin
-            array_done_count <= 0;
-            prev_array_done <= 0;
-            vector_start <= 0;
-            first_start_sent <= 0;
-        end else begin
-            prev_array_done <= array_done;
-
-            // Első start küldése kívülről
-            if (start && !first_start_sent) begin
-                first_start_sent <= 1;
-            end
-
-            // Ha array_done felfutó él és még nem értük el a length-et
-            if (array_done && !prev_array_done && array_done_count < length) begin
-                array_done_count <= array_done_count + 1;
-            end
-
-            // Vector adder csak akkor induljon, ha elértük a kívánt számot
-            if ((array_done_count == length) && (array_done && !prev_array_done)) begin
-                vector_start <= 1;
-            end else begin
-                vector_start <= 0;
-            end
-        end
+        if (reset)
+            systolic_ready_prev <= '0;
+        else
+            systolic_ready_prev <= systolic_ready;
     end
 
-    // Belső start generálás systolic array-nek
-    assign systolic_start = (first_start_sent && (array_done_count < length)) ? 
-                            (array_done && !prev_array_done ? 1 : 0) :
-                            (start && !first_start_sent); // az első ciklusnál a külső start
+    // array_done jel
+    assign array_done = |(systolic_ready & ~systolic_ready_prev);
+
+    // array_done_count növelése
+    always_ff @(posedge clk or posedge reset) begin
+        if (reset)
+            array_done_count <= 0;
+        else if (array_done && state == WAIT_SYSTOLIC_DONE)
+            array_done_count <= array_done_count + 1;
+    end
+
+    // Állapotgép
+    always_ff @(posedge clk or posedge reset) begin
+        if (reset)
+            state <= IDLE;
+        else
+            state <= next_state;
+    end
+
+    always_comb begin
+    // Alapértelmezett értékadás minden ciklusra
+    next_state = state;
+    vector_start = 0;
+
+    case (state)
+        IDLE: begin
+            if (start)
+                next_state = SYSTOLIC_RUN;
+        end
+
+        SYSTOLIC_RUN: begin
+            next_state = WAIT_SYSTOLIC_DONE;
+        end
+
+        WAIT_SYSTOLIC_DONE: begin
+            if (array_done) begin
+                if (array_done_count + 1 < length)
+                    next_state = SYSTOLIC_RUN;
+                else
+                    next_state = START_ADDER;
+            end
+        end
+
+        START_ADDER: begin
+            vector_start = 1;
+            next_state = WAIT_ADDER_DONE;
+        end
+
+        WAIT_ADDER_DONE: begin
+            if (adder_ready)
+                next_state = DONE;
+        end
+
+        DONE: begin
+            // Explicit maradás, de biztosítjuk, hogy minden változó stabil marad
+            vector_start = 0;
+            next_state = DONE;
+        end
+
+        default: begin
+            // Hibás állapot elkerülése érdekében alapállapotba vissza
+            next_state = IDLE;
+            vector_start = 0;
+        end
+    endcase
+end
+
 
 endmodule
