@@ -1,5 +1,5 @@
 module systolic_array #(
-    parameter WIDTH = 16,
+    parameter DATA_WIDTH = 16,
     parameter NUM_UNITS = 16
 )(
     input  logic clk,
@@ -8,10 +8,10 @@ module systolic_array #(
 
     input  logic [NUM_UNITS-1:0] active_units,
     
-    input  logic [NUM_UNITS-1:0][WIDTH-1:0] a_in_array,
-    input  logic [NUM_UNITS-1:0][WIDTH-1:0] b_in_array,
+    input  logic [NUM_UNITS-1:0][DATA_WIDTH-1:0] a_in_array,
+    input  logic [NUM_UNITS-1:0][DATA_WIDTH-1:0] b_in_array,
 
-    output logic [NUM_UNITS-1:0][WIDTH-1:0] result_array,
+    output logic [NUM_UNITS-1:0][DATA_WIDTH-1:0] result_array,
     output logic [NUM_UNITS-1:0] ready_array
 );
 

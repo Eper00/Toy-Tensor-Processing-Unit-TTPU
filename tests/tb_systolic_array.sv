@@ -3,7 +3,7 @@
 module tb_systolic_array;
 
     parameter WIDTH = 16;
-    parameter NUM_UNITS = 4;
+    parameter NUM_UNITS = 3;
 
     // Jelek
     logic clk = 0;
@@ -41,11 +41,7 @@ module tb_systolic_array;
         reset = 0;
         
         active_units = 4'b1111;
-        
-        #10
-        start = 1;
-        // 1.0 * 2.0, 3.0 * 0.5, -1.0 * 1.0, 0.0 * 2.0
-        a_in_array[0] = 16'h3C00; // 1.0
+        a_in_array[0] = 16'h4000; // 2.0
         b_in_array[0] = 16'h4000; // 2.0
         
         
@@ -54,7 +50,41 @@ module tb_systolic_array;
 
         a_in_array[2] = 16'hBC00; // -1.0
         b_in_array[2] = 16'h3C00; // 1.0
+        start = 1;
+       
+        #10
+        start = 0;
+        // 1.0 * 2.0, 3.0 * 0.5, -1.0 * 1.0, 0.0 * 2.0
+       
+    
         
+        wait(ready_array[0]);
+        a_in_array[0] = 16'h3C00; // 1.0
+        b_in_array[0] = 16'h3C00; // 1.0
+        
+        
+        a_in_array[1] = 16'h3C00; // 3.0
+        b_in_array[1] = 16'h4000; // 0.5
+
+        a_in_array[2] = 16'h3C00; // -1.0
+        b_in_array[2] = 16'h4000; // 1.0
+        start = 1;
+        #10
+        start = 0;
+        wait(ready_array[0]);
+        
+        a_in_array[0] = 16'h4000; // 2.0
+        b_in_array[0] = 16'h4000; // 2.0
+        
+        
+        a_in_array[1] = 16'h3C00; // 3.0
+        b_in_array[1] = 16'h4000; // 0.5
+
+        a_in_array[2] = 16'h3C00; // -1.0
+        b_in_array[2] = 16'h4000; // 1.0
+        start = 1;
+        #10
+        start = 0;
         end
         
 endmodule

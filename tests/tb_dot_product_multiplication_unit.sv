@@ -1,9 +1,14 @@
 module tb_dot_product_multiplication_unit;
 
+    // Paraméterek
     parameter WIDTH = 16;
     parameter NUM_UNITS = 4;
+    parameter NUM_VECTORS = 3;
 
-    logic clk, reset, start;
+    // Jelek deklarációja
+    logic clk;
+    logic reset;
+    logic start;
     logic [NUM_UNITS-1:0] active_units;
     logic [$clog2(NUM_UNITS):0] length;
 
@@ -12,13 +17,22 @@ module tb_dot_product_multiplication_unit;
     logic [NUM_UNITS-1:0][WIDTH-1:0] bias_array;
 
     logic [NUM_UNITS-1:0][WIDTH-1:0] relu_out;
-    logic done, array_done, data_ready;
+    logic done;
+    logic array_done;
 
-    // DUT
+    // Bemeneti vektor tömb
+    typedef logic [NUM_UNITS-1:0][WIDTH-1:0] vector_t;
+    vector_t input_a_array   [NUM_VECTORS];
+    vector_t input_b_array   [NUM_VECTORS];
+
+    // Számláló
+    logic [$clog2(NUM_VECTORS):0] i;
+
+    // Modul példányosítása
     dot_product_multiplication_unit #(
         .WIDTH(WIDTH),
         .NUM_UNITS(NUM_UNITS)
-    ) dut (
+    ) uut (
         .clk(clk),
         .reset(reset),
         .start(start),
@@ -29,42 +43,57 @@ module tb_dot_product_multiplication_unit;
         .bias_array(bias_array),
         .relu_out(relu_out),
         .done(done),
-        .array_done(array_done),
-        .data_ready(data_ready)
+        .array_done(array_done)
     );
 
-    // Clock generation
+    // Órajel generálása
     always #5 clk = ~clk;
 
+    // Teszt inicializálás
     initial begin
         clk = 0;
         reset = 1;
-        start = 0;
         active_units = 4'b1111;
-        length = 3;
+        length = 4;
 
-        // Példa értékek: 16 bites lebegőpontos hexák (pl. 0.5, 1.0, -1.0)
-        a_in_array = '{16'h3C00, 16'h3C00, 16'hBC00, 16'h0000};  // 1.0, 1.0, -1.0, 0.0
-        b_in_array = '{16'h4000, 16'h3C00, 16'h3C00, 16'h0000};  // 2.0, 1.0, 1.0, 0.0
-        bias_array  = '{16'h3800, 16'h3800, 16'h3800, 16'h0000}; // 0.5, 0.5, 0.5, 0.0
+        // Bemeneti vektorok feltöltése
+        input_a_array[0] = '{16'h3C00, 16'h3C00, 16'hBC00, 16'h3C00}; // 1.0, 1.0, -1.0, 1.0
+        input_b_array[0] = '{16'h4000, 16'h3C00, 16'h3C00, 16'h3C00}; // 2.0, 1.0, 1.0, 1.0
 
-        #20;
-        reset = 0;
+        input_a_array[1] = '{16'h4000, 16'h4000, 16'h4000, 16'h4000}; // 2.0
+        input_b_array[1] = '{16'h3C00, 16'h3C00, 16'h3C00, 16'h3C00}; // 1.0
 
-        // Start impulzus
-        #10;
-        start = 1;
-        #10;
-        start = 0;
+        input_a_array[2] = '{16'h3C00, 16'h3C00, 16'h3C00, 16'h3C00}; // 1.0
+        input_b_array[2] = '{16'h3C00, 16'h3C00, 16'h3C00, 16'h3C00}; // 1.0
 
-        // Várjuk a data_ready jelet
-        wait (data_ready);
+        input_a_array[3] = '{16'h4000, 16'h4000, 16'h4000, 16'h4000}; // 2.0
+        input_b_array[3] = '{16'h3C00, 16'h3C00, 16'h3C00, 16'h3C00}; // 1.0
 
-        // Kiírás
-       
+        bias_array = '{16'h3800, 16'h3800, 16'h3800, 16'h3800}; // 0.5
 
-        #20;
-        $finish;
+        // Reset lefutása után indulunk
+        #10 reset = 0;
     end
 
-endmodule
+    integer i;
+
+    always_ff @(posedge clk) begin
+        if (reset) begin
+            i <= 0;
+            a_in_array <= input_a_array[0];
+            b_in_array <= input_b_array[0];
+            start <= 1;
+        end else if (array_done) begin
+            i <= i + 1;
+            if (i + 1 < NUM_VECTORS) begin
+                a_in_array <= input_a_array[i + 1];
+                b_in_array <= input_b_array[i + 1];
+                start <= 1;
+            end else begin
+                start <= 0;
+            end
+        end else begin
+            start <= 0;
+        end
+    end
+    endmodule

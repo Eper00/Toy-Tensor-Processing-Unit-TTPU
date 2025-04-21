@@ -2,18 +2,18 @@ module tb_pointer_array;
 
     parameter N_UNITS = 4;
 
+    // Tesztjelek
     logic clk;
     logic rst;
     logic step;
-    logic [31:0] start_addr;
+    logic [15:0] start_addr;
     logic [7:0] kernel_size;
     logic [N_UNITS-1:0] active_units;
-    logic [31:0] addr_out [N_UNITS-1:0];
-    logic [31:0] bias_addr [N_UNITS-1:0];
+    logic [N_UNITS-1:0][15:0] addr_out;
+    logic [N_UNITS-1:0][15:0] bias_addr;
 
-    pointer_array #(
-        .N_UNITS(N_UNITS)
-    ) dut (
+    // DUT
+    pointer_array #(.N_UNITS(N_UNITS)) dut (
         .clk(clk),
         .rst(rst),
         .step(step),
@@ -24,51 +24,33 @@ module tb_pointer_array;
         .bias_addr(bias_addr)
     );
 
-    // Clock generator
+    // Órajelgenerátor
     always #5 clk = ~clk;
 
     initial begin
-        // Init
+        $display("===== Pointer Array Teszt =====");
         clk = 0;
         rst = 1;
         step = 0;
-        start_addr = 32'h1000;
-        kernel_size = 8;
-        active_units = 4'b1011; // csak az [0], [1] és [3] aktív
+        start_addr = 16'd100;
+        kernel_size = 8'd3;
+        active_units = 4'b1101;  // aktiv: unit[3], unit[2]=0, unit[1], unit[0]
 
+        // Reset
         #10;
         rst = 0;
 
-        // Várunk egy kicsit, hogy reset befejeződjön
-        #10;
-
-        $display("Initial addresses:");
-        for (int i = 0; i < N_UNITS; i++) begin
-            $display("Unit %0d -> addr_out = %0h, bias_addr = %0h", i, addr_out[i], bias_addr[i]);
-        end
-
-        // Egy step
-        step = 1;
-        #10;
-        step = 0;
-        #10;
-
-        $display("After 1 step:");
-        for (int i = 0; i < N_UNITS; i++) begin
-            $display("Unit %0d -> addr_out = %0h", i, addr_out[i]);
-        end
-
-        // Még két step
-        repeat (2) begin
+        // Lépések indítása
+        for (int i = 0; i < 5; i++) begin
+            #10;
             step = 1;
             #10;
             step = 0;
-            #10;
-        end
-
-        $display("After 3 steps:");
-        for (int i = 0; i < N_UNITS; i++) begin
-            $display("Unit %0d -> addr_out = %0h", i, addr_out[i]);
+            #5;
+            $display("Step %0d:", i);
+            for (int j = 0; j < N_UNITS; j++) begin
+                $display("  Unit %0d -> addr_out: %0d, bias_addr: %0d", j, addr_out[j], bias_addr[j]);
+            end
         end
 
         $finish;
