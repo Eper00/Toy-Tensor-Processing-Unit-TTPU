@@ -10,7 +10,7 @@ module tb_picture_pointer_array;
     logic [7:0]               dilation;
     logic [15:0]              width;
     logic [N_UNITS-1:0]       active_units;
-    logic [N_UNITS-1:0][15:0] addr_out;
+    logic [15:0] [N_UNITS-1:0] addr_out;
 
     picture_pointer_array #(
         .N_UNITS(N_UNITS)
@@ -26,51 +26,66 @@ module tb_picture_pointer_array;
         .addr_out(addr_out)
     );
 
-    // Órajel generálás
+    // Clock generation
     always #5 clk = ~clk;
 
+    // Helper task: wait for a rising edge
+    task tick();
+        begin
+            #1; step = 1;
+            #10; step = 0;
+        end
+    endtask
+
     initial begin
-        $display("==== picture_pointer_array TEST START ====");
-        $monitor("Time %0t | dilation=%0d | step=%b | addr_out = %p",
-                 $time, dilation, step, addr_out);
+        $display("=== picture_pointer_array TEST START ===");
+        clk = 0;
+        rst = 1;
+        step = 0;
+        start_addr = 16'd100;
+        kernel_size = 8'd3;
+        width = 16'd10;
+        active_units = 4'b1011;  // Aktív egységek: 0, 1, 3
 
-        // Inicializálás
-        clk          = 0;
-        rst          = 1;
-        step         = 0;
-        start_addr   = 16'd100;
-        kernel_size  = 8'd3;
-        dilation     = 8'd0;   // Először dilation = 0
-        width        = 16'd10;
-        active_units = 4'b1011;
+        // === Eset 1: dilation = 0 ===
+        dilation = 8'd0;
 
+        #10 rst = 0;
         #10;
-        rst = 0;
 
-        // Lépések dilation = 0 esetén
-        repeat (5) begin
-            #10;
-            step = 1;
-            #10;
-            step = 0;
+        $display("--- dilation = 0, init values ---");
+        foreach (addr_out[i]) begin
+            $display("unit[%0d] addr = %0d", i, addr_out[i]);
         end
 
-        // dilation = 2 eset
-        #20;
+        tick(); tick(); tick();
+
+        $display("--- after 3 steps (dilation=0) ---");
+        foreach (addr_out[i]) begin
+            $display("unit[%0d] addr = %0d", i, addr_out[i]);
+        end
+
+        // === Eset 2: dilation = 2 ===
+        #10;
         rst = 1;
         #10;
         rst = 0;
         dilation = 8'd2;
 
-        repeat (5) begin
-            #10;
-            step = 1;
-            #10;
-            step = 0;
+        #10;
+        $display("--- dilation = 2, init values ---");
+        foreach (addr_out[i]) begin
+            $display("unit[%0d] addr = %0d", i, addr_out[i]);
         end
 
-        #20;
-        $display("==== picture_pointer_array TEST END ====");
+        tick(); tick(); tick();
+
+        $display("--- after 3 steps (dilation=2) ---");
+        foreach (addr_out[i]) begin
+            $display("unit[%0d] addr = %0d", i, addr_out[i]);
+        end
+
+        $display("=== TEST END ===");
         $finish;
     end
 

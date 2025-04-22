@@ -1,12 +1,13 @@
 module dot_product_multiplication_unit #(
     parameter DATA_WIDTH = 16,
-    parameter NUM_UNITS = 4
+    parameter NUM_UNITS = 4,
+    parameter IMAGE_WIDTH = 8
 )(
     input  logic clk,
     input  logic reset,
     input  logic start,
     input  logic [NUM_UNITS-1:0] active_units,
-    input  logic [$clog2(NUM_UNITS):0] length,
+    input  logic [($clog2(IMAGE_WIDTH)-1) * ($clog2(IMAGE_WIDTH)-1):0] length,
 
     input  logic [NUM_UNITS-1:0][DATA_WIDTH-1:0] a_in_array,
     input  logic [NUM_UNITS-1:0][DATA_WIDTH-1:0] b_in_array,
@@ -73,7 +74,7 @@ module dot_product_multiplication_unit #(
     // ReLU
     ReLu #(
         .DATA_WIDTH(DATA_WIDTH),
-        .LENGTH(NUM_UNITS)
+        .NUM_UNITS(NUM_UNITS)
     ) relu (
         .clk(clk),
         .reset(reset),
