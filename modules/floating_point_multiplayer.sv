@@ -56,7 +56,8 @@ always @(posedge clk or posedge reset) begin
     end else if (en) begin
         cnt<=cnt +1;
         if (a == 0 || b == 0) begin
-            result <= 0;
+            s2_result_exponent <= 0;
+            s2_result_fraction<=0;
         end else begin
             if (s1_product_fraction[21] == 1'b1) begin
                 s2_result_fraction <= s1_product_fraction[20:11];
@@ -65,9 +66,10 @@ always @(posedge clk or posedge reset) begin
                 s2_result_fraction <= s1_product_fraction[19:10];
                 s2_result_exponent <= s1_result_exponent;
             end
+         end
 
-            s2_result_sign <= s1_result_sign;
-            if (cnt>2)begin
+        s2_result_sign <= s1_result_sign;
+        if (cnt>2)begin
                 cnt<=3;
                 ready<=1;
                 result <= {s2_result_sign, s2_result_exponent, s2_result_fraction};
@@ -76,7 +78,7 @@ always @(posedge clk or posedge reset) begin
                 result<=16'b0;
             end
         end 
-    end else begin
+         else begin
             ready<=0;
             result<=16'b0;
         end

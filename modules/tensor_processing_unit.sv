@@ -7,7 +7,7 @@ module tensor_processing_unit #(
     input  logic clk,
     input  logic reset,
     input  logic start,  // külső start jel
-    input  logic [NUM_UNITS-1:0] done_array,  // aktív egységek
+    input  logic [NUM_UNITS-1:0] active_units,  // aktív egységek
     input  logic [NUM_UNITS-1:0][$clog2(IMAGE_WIDTH * IMAGE_HEIGHT)-1:0] start_addr_1,
     input  logic [NUM_UNITS-1:0][$clog2(IMAGE_WIDTH * IMAGE_HEIGHT)-1:0] start_addr_2,
     input  logic [NUM_UNITS-1:0][$clog2(IMAGE_WIDTH * IMAGE_HEIGHT)-1:0] bias_addr,
@@ -34,7 +34,7 @@ module tensor_processing_unit #(
         .clk(clk),
         .reset(reset),
         .step(step_signal), // <--- a dot_product array_done jele lesz ide kötve
-        .en(|done_array),   // egyszerű engedélyezés: ha bármelyik unit aktív
+        .en(|active_units),   // egyszerű engedélyezés: ha bármelyik unit aktív
         .start_addr_1(start_addr_1),
         .start_addr_2(start_addr_2),
         .addresses(bias_addr),
@@ -53,7 +53,7 @@ module tensor_processing_unit #(
         .clk(clk),
         .reset(reset),
         .start(start), // <--- kívülről kapott start
-        .active_units(done_array),
+        .active_units(active_units),
         .length(length),
         .a_in_array(a_array),
         .b_in_array(b_array),

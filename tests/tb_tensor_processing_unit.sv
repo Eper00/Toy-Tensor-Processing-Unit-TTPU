@@ -3,14 +3,14 @@
 module tb_tensor_processing_unit;
 
     parameter DATA_WIDTH = 16;
-    parameter IMAGE_WIDTH = 8;
-    parameter IMAGE_HEIGHT = 8;
-    parameter NUM_UNITS = 2;
+    parameter IMAGE_WIDTH = 5;
+    parameter IMAGE_HEIGHT = 5;
+    parameter NUM_UNITS = 9;
 
     logic clk;
     logic reset;
     logic start;
-    logic [NUM_UNITS-1:0] done_array;
+    logic [NUM_UNITS-1:0] active_units;
     logic [NUM_UNITS-1:0][$clog2(IMAGE_WIDTH * IMAGE_HEIGHT)-1:0] start_addr_1;
     logic [NUM_UNITS-1:0][$clog2(IMAGE_WIDTH * IMAGE_HEIGHT)-1:0] start_addr_2;
     logic [NUM_UNITS-1:0][$clog2(IMAGE_WIDTH * IMAGE_HEIGHT)-1:0] bias_addr;
@@ -33,7 +33,7 @@ module tb_tensor_processing_unit;
         .clk(clk),
         .reset(reset),
         .start(start),
-        .done_array(done_array),
+        .active_units(active_units),
         .start_addr_1(start_addr_1),
         .start_addr_2(start_addr_2),
         .bias_addr(bias_addr),
@@ -45,24 +45,25 @@ module tb_tensor_processing_unit;
 
     initial begin
         $display("=== Tensor Processing Unit Testbench with Memory Preload ===");
-
+        active_units=9'b111111111;
         clk = 0;
         reset = 1;
         start = 0;
-        done_array = 4'b0011;
+       
 
         // Memóriatartalom feltöltése (pl. pixelértékek, bias stb.)
         preload_memory();
 
-        start_addr_1 = '{0, 10};
-        start_addr_2 = '{1, 11};
-        bias_addr    = '{2, 12};
+        start_addr_1 = '{0, 1,2,5,6,7,10,11,12};
+        start_addr_2 = '{0, 0,0,0,0,0,0,0,0};
+        bias_addr    = '{0, 0,0,0,0,0,0,0,0};
 
-        kernel_dim = 2;
+        kernel_dim = 3;
         length=kernel_dim*kernel_dim;
+        
         #20
         reset = 0;
-        #10;
+        #5
         start = 1;
         #10;
         start = 0;
@@ -81,17 +82,43 @@ module tb_tensor_processing_unit;
     end
 
     // Memória inicializálás
-    task preload_memory;
-        begin
-            // Egyszerű mintaadatok feltöltése
-            for (int i = 0; i < IMAGE_WIDTH * IMAGE_HEIGHT; i++) begin
-                dut.memory_inst.mem1.image_mem[i] = i * 2;
-                dut.memory_inst.simple_memory_array[i]=i;
-                dut.memory_inst.mem2.image_mem[i] = i ; // Példa: 0, 2, 4, ...
-            end
-            
+  task preload_memory;
+    begin
+        // Kép memória feltöltése (mem1.image_mem)
+        logic [15:0] image_data [0:24] = {
+            16'h0000, 16'h0000, 16'h3C00, 16'h3C00, 16'h0000,
+            16'h0000, 16'h3C00, 16'h0000, 16'h3C00, 16'h0000,
+            16'h0000, 16'h0000, 16'h0000, 16'h3C00, 16'h0000,
+            16'h0000, 16'h0000, 16'h3C00, 16'h0000, 16'h0000,
+            16'h0000, 16'h0000, 16'h0000, 16'h3C00, 16'h0000
+        };
+        
+        // Kernel memória feltöltése (mem2.image_mem)
+       logic [15:0] kernel_data [0:24] = {
+        16'h3C00, 16'h0000, 16'hBC00, 
+        16'h0000, 16'h0000,
+        16'h3C00, 16'h0000, 16'hBC00, 
+        16'h0000, 16'h0000,
+        16'h3C00, 16'h0000, 16'hBC00, 
+        16'h0000, 16'h0000,
+        16'h0000, 16'h0000, 16'h0000, 
+        16'h0000, 16'h0000,
+        16'h0000, 16'h0000, 16'h0000, 
+        16'h0000, 16'h0000
+    };
+        
+        // Feltöltés
+        for (int i = 0; i < 25; i++) begin
+            dut.memory_inst.mem1.image_mem[i] = image_data[i];
+            dut.memory_inst.simple_memory_array[i] = 16'h0000; // Bias memória: mindig 0
+        end
 
-       end
-    endtask
+        for (int i = 0; i < 25; i++) begin
+            dut.memory_inst.mem2.image_mem[i] = kernel_data[i];
+        end
+    end
+endtask
+
+
 
 endmodule

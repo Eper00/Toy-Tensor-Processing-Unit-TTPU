@@ -39,7 +39,7 @@ module dot_product_multiplication_unit #(
     logic vector_start;
     logic systolic_start_pulse;
 
-    logic [$clog2(NUM_UNITS+1)-1:0] array_done_count;
+    logic [($clog2(IMAGE_WIDTH)-1) * ($clog2(IMAGE_WIDTH)-1):0] array_done_count;
 
     // Systolic array
     systolic_array #(
@@ -87,7 +87,7 @@ module dot_product_multiplication_unit #(
     assign systolic_start_pulse = (state == SYSTOLIC_RUN);
 
     // array_done jel
-    assign array_done = systolic_ready;
+    assign array_done = |systolic_ready;
     assign done = adder_ready;
 
     // array_done_count növelése
