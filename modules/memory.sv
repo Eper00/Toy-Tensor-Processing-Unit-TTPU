@@ -53,7 +53,7 @@ module memory_unit #(
                     if (step) begin
                         if (step_counter_cloumn == kernel_dim) begin
                             for (integer i = 0; i < NUM_UNITS; i = i + 1) begin
-                                adress[i] <= adress[i] + IMAGE_WIDTH - kernel_dim;
+                                adress[i] <= adress[i] + IMAGE_WIDTH - kernel_dim+1;
                             end
                             step_counter_row <= step_counter_row + 1;
                             step_counter_cloumn <= 1;
