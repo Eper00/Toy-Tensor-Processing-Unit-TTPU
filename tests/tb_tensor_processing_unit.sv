@@ -20,7 +20,8 @@ module tb_tensor_processing_unit;
     logic [($clog2(IMAGE_WIDTH)-1)*($clog2(IMAGE_WIDTH)-1):0] length;
     logic [NUM_UNITS-1:0][DATA_WIDTH-1:0] relu_out;
     logic done;
-
+    logic en_1;
+    logic en_2;
     // Instantiate TPU
     tensor_processing_unit #(
         .DATA_WIDTH(DATA_WIDTH),
@@ -51,7 +52,9 @@ module tb_tensor_processing_unit;
         .active_units(active_units),
         .length(length),
         .relu_out(relu_out),
-        .done(done)
+        .done(done),
+        .mem_en1(en_1),
+        .mem_en2(en_2)
     );
 
     // Clock generation
@@ -65,6 +68,28 @@ module tb_tensor_processing_unit;
         16'h0000, 16'h0000, 16'h3C00, 16'h0000, 16'h0000,
         16'h0000, 16'h0000, 16'h0000, 16'h3C00, 16'h0000
     };
+ // 0 0 1 1 0
+ // 0 1 0 1 0
+ // 0 0 0 1 0 
+ // 0 0 1 0 0
+ // 0 0 0 1 0
+    logic [15:0] mem1_data_0 [0:24] = '{
+        16'h0000, 16'h3C00, 16'h0000, 16'h0000, 16'h0000,
+        16'h3C00, 16'h0000, 16'h3C00, 16'h0000, 16'h0000,
+        16'h3C00, 16'h0000, 16'h0000, 16'h3C00, 16'h0000,
+        16'h3C00, 16'h0000, 16'h0000, 16'h3C00, 16'h0000,
+        16'h0000, 16'h3C00, 16'h3C00, 16'h0000, 16'h0000
+    };
+
+ // 0 1 0 0 0
+ // 1 0 1 0 0
+ // 1 0 0 1 0 
+ // 1 0 0 1 0
+ // 0 1 1 0 0
+
+
+
+
 
     logic [15:0] mem2_data [0:24] = '{
         16'h3C00, 16'h0000, 16'hBC00, 16'h0000, 16'h0000,
@@ -73,6 +98,24 @@ module tb_tensor_processing_unit;
         16'h0000, 16'h0000, 16'h0000, 16'h0000, 16'h0000,
         16'h0000, 16'h0000, 16'h0000, 16'h0000, 16'h0000
     };
+// 1 0 -1 0 0
+// 1 0 -1 0 0
+// 1 0 -1 0 0
+// 0 0  0 0 0 
+// 0 0  0 0 0
+
+
+
+// RESULT= mem_1 x mem_2
+// 0 0 1
+// 0 0 1
+// 0 0 1
+
+// RESULT= mem_0 x mem_2
+// 1 0 1
+// 2 0 1
+// 1 0 1
+
     logic [15:0] simple_mem_data [0:24] = '{
         16'h0000, 16'h0000, 16'h0000, 16'h0000, 16'h0000,
         16'h0000, 16'h0000, 16'h0000, 16'h0000, 16'h0000,
@@ -91,7 +134,7 @@ module tb_tensor_processing_unit;
       
                 
                 if (i + j < MEM_SIZE) begin
-                    data_in_mem1[j] <= mem1_data[i + j];
+                    data_in_mem1[j] <= mem1_data_0[i + j];
                     start_addr_1[j] <= i + j;
                    
                     data_in_mem2[j] <= mem2_data[i + j];

@@ -28,11 +28,12 @@ module top_memory #(
 
     output logic [NUM_UNITS-1:0][DATA_WIDTH-1:0] out_1,
     output logic [NUM_UNITS-1:0][DATA_WIDTH-1:0] out_2,
-    output logic [NUM_UNITS-1:0][DATA_WIDTH-1:0] simple_mem_out
+    output logic [NUM_UNITS-1:0][DATA_WIDTH-1:0] simple_mem_out,
+    output logic en_out_1,
+    output logic en_out_2
 );
 
-    logic en_out_1;
-    logic en_out_2;
+    
 
     // Simple memory array
     logic [IMAGE_WIDTH*IMAGE_HEIGHT-1:0][DATA_WIDTH-1:0] simple_memory_array;

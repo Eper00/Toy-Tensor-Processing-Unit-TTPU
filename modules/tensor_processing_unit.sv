@@ -36,7 +36,9 @@ module tensor_processing_unit #(
 
     // Eredmény és kész jel
     output logic [NUM_UNITS-1:0][DATA_WIDTH-1:0] relu_out,
-    output logic done
+    output logic done,
+    output logic mem_en1,
+    output logic mem_en2
 );
 
     // array_done jel deklarálása
@@ -68,7 +70,9 @@ module tensor_processing_unit #(
         .simple_read(simple_read),
         .out_1(out_1),
         .out_2(out_2),
-        .simple_mem_out(simple_mem_out)
+        .simple_mem_out(simple_mem_out),
+        .en_out_1(mem_en1),
+        .en_out_2(mem_en2)
     );
 
     // Dot product egység
